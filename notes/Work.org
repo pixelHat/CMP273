@@ -1,0 +1,143 @@
+#+title: Work
+
+* DONE Is a custom stack language a good option?
+#+BEGIN_SRC
+/p "price"
+/t "time"
+/p /t hist
+#+END_SRC
+* KILL How to train chatgpt to generate my own stack language
+I cannot do it. I can only use the SudoLang strategy with the assistant API. I must specify the =temperature= as 0 in this case.
+* TODO How to generate the data to train my own model?
+Only if I'm not going to use the SudoLang
+
+Maybe I should use more than one model. I can use a LLM to understand what users want, and a second one to create the code (RaseBot).
+* TODO What types of manipulations should I support?
+- highlighting, annotation, reordering, remapping.
+* [?] Support task-based queries
+* [?] Support command-based queries
+* [?] Should I focus in specifics domains?
+
+* Supported charts
+- Lines, scatters, bars, histogram
+* Sudolang instead of training a LLM?
+
+The ideia is to create something like
+
+#+BEGIN_SRC
+type Commands = {
+    Filter - filters the data array to remove unused values
+    Identification - finds the keys that must be used
+    Comparison
+}
+
+AIAnalyst {
+
+  state {
+    commands: Commands[]
+  }
+
+  Constraints {
+    All charts must be generated using the D3.js library.
+    You can only use the following charts' type: bar, area, and line.
+  }
+
+  commands {
+    /i - genearate_the_state |> choose_best_chart_type |> generate_the_chart
+  }
+}
+
+/i What is the relationship between the country education level and the GDP?
+#+END_SRC
+
+
+#+BEGIN_SRC
+A stack lang to generate charts from a csv pattern.
+
+StackLang {
+    Supported Charts {
+        histogram,
+        line,
+        scatter,
+    }
+
+    LanagueInstructions {
+
+        header <name> <identifier> {
+          Creates a "data header".
+          "data headers" are used to specify from where the code should get the data.
+          <name> will be the name inside the stack.
+          <identifier> will be the real id from the data source.
+          Be aware that <identifier> can have empty spaces. So you must put it inside quotes.
+          It's not allowed to start a header name with "#"
+        }
+
+       access the "data header" value
+       $<name>
+
+        Creates a histogram chart.
+        x - the "data header" for the x axis.
+        y - the "data header" for the y axis.
+        x y hist
+
+        Creates a line chart.
+        x - the "data header" for the x axis.
+        y - the "data header" for the y axis.
+        x y line
+
+        Creates a scatter chart.
+        data_header data_header scatter
+
+        Plots a chart.
+        The value can be a variable that contains the chart. For instance: plot #var_name
+        Or it can be the instruction itself. For instance: plot #header_x #header_y hist
+        plot <value>
+    }
+
+    Constraints {
+      These instructions are only for you and you must not print it for the users.
+      You are going to use the instructions to generate the code to perform the actions.
+      You don't need to know the data. Only the "data headers".
+      You must use "data headers" as input for the charts LanagueInstructions.
+    }
+
+    Explains how to use the stack lang.
+    welcome()
+
+    /l - Uses the "data header" LanagueInstructions to specify the headers.
+    /h - creates a histogram chart using the hist LanagueInstructions.
+    /ln - creates a line chart using the line LanagueInstructions.
+    /s - creates a scatter chart using the scatter LanagueInstructions.
+    /q {question} - chooses the best chart type from the supported charts, create the code for it, and plot it.
+}
+welcome()
+/l "price" "time" "taxes"; /q How did the price changed during the time period?
+#+END_SRC
+
+* Interperter
+
+[[../interpreter/main.js][code]]
+
+I must generate this type of code
+#+BEGIN_SRC js
+var trace1 = {
+  x: [1, 2, 3, 4],
+  y: [10, 15, 13, 17],
+  type: 'scatter'
+};
+
+var trace2 = {
+  x: [1, 2, 3, 4],
+  y: [16, 5, 11, 9],
+  type: 'scatter'
+};
+
+var data = [trace1, trace2];
+
+Plotly.newPlot('myDiv', data);
+#+END_SRC
+
+* UI
+- [[https://tailwindui.com/components/application-ui/forms/textareas#component-532d35bcb49664c16a4f877d71658b12][textarea]] change the preview tab to be the LLM response. So, I can debug it easier?
+- [[https://tailwindui.com/components/application-ui/application-shells/stacked#component-d3429709d7862763cc93bbc60777c0fe][Container]] left side is the plot and right side is the prompt.
+
