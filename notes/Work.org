@@ -14,6 +14,8 @@ Only if I'm not going to use the SudoLang
 Maybe I should use more than one model. I can use a LLM to understand what users want, and a second one to create the code (RaseBot).
 * TODO What types of manipulations should I support?
 - highlighting, annotation, reordering, remapping.
+* TODO How to keep memory
+I have to keep the current code and transformation. So, users can aks to change it. Maybe I can use the state in the SudoLang.
 * [?] Support task-based queries
 * [?] Support command-based queries
 * [?] Should I focus in specifics domains?
