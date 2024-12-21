@@ -1,0 +1,6 @@
+streamlit
+plotly
+ipywidgets
+orjson
+networkx
+criticalpath
