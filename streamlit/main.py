@@ -58,12 +58,14 @@ cpu0_spent = sum(
 )
 
 
+should_display_abe = st.toggle("ABE", value=True)
 should_display_outliers = st.toggle("Outliers")
 should_display_cpu_idless = st.toggle("CPU Idless")
 gantt = Application(
     "application.parquet",
     should_display_outliers=should_display_outliers,
     show_idless_cpu=should_display_cpu_idless,
+    show_abe=should_display_abe,
 )
 
 

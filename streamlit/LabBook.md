@@ -16,6 +16,8 @@
 
 # StreamLit
 
+
+
 ## fragment
 
 ```py
@@ -62,6 +64,8 @@ else:
 
 # Plotly
 
+https://plotly.com/python/reference
+
 ## graph_objects
 
 The Plotly graph_objects module allows us to create custom charts simliar to ggplot2. However, we can use OOP.
@@ -102,4 +106,23 @@ fig = px.scatter(
     title="Abc",
 )
 fig.update_traces(mode="lines", line_shape="hv")
+```
+
+## User annotation
+
+https://plotly.com/python/shapes/#style-of-userdrawn-shapes
+
+Plotly allows users to create their own annotations.
+
+```py
+fig.show(
+    config={
+        'modeBarButtonsToAdd': [
+            'drawline',
+            'drawopenpath',
+            'drawclosedpath',
+            'drawcircle',
+            'drawrect',
+            'eraseshape'
+        ]})
 ```

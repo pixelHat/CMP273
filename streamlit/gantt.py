@@ -18,6 +18,7 @@ class Application:
         file_name: str,
         should_display_outliers: bool = False,
         show_idless_cpu: bool = False,
+        show_abe: bool = False,
     ):
         self.file_name = file_name
         self.application = pq.read_table("application.parquet").to_pandas()
@@ -26,6 +27,7 @@ class Application:
         self.should_display_outliers = should_display_outliers
         self.highlighted = []
         self.show_idless_cpu = show_idless_cpu
+        self.show_abe = show_abe
 
     def tasks_by_resource(self, resourceId: list[str]):
         return self.application[self.application["ResourceId"].isin(resourceId)]
@@ -114,7 +116,6 @@ class Application:
 
                 if show_legend:
                     legend_entries.add(task)  # Add the task to the legend tracking set
-
         fig.add_traces(bars)
 
         fig.update_layout(
@@ -137,25 +138,17 @@ class Application:
         )
 
         # ABE
-        FIXES_SHAPE_HEIGHT = 0.3
-        abe_shape = dict(
-            type="rect",
-            x0=self.abe - 10,
-            y0=0 - FIXES_SHAPE_HEIGHT,
-            x1=self.abe + 10,
-            y1=len(self.resourcesId) - 1 + FIXES_SHAPE_HEIGHT,
-            line=dict(color="rgba(128, 128, 128, 0.8)", width=20),
-            name="abe",
-        )
-        abe_annotation = dict(
-            x=self.abe,
-            y=2,
-            text=f"ABE {self.abe}",
-            showarrow=False,
-            font=dict(size=16, color="white"),
-            textangle=-90,  # Rotate text vertically
-            name="abe",
-        )
+        if self.show_abe:
+            fig.add_vrect(
+                x0=self.abe,
+                x1=self.abe,
+                label=dict(
+                    text=f"ABE {self.abe}",
+                    font=dict(size=16, color="white"),
+                    textangle=-90,
+                ),
+                line=dict(color="rgba(128, 128, 128, 0.8)", width=20),
+            )
 
         # Idle CPU
         if self.show_idless_cpu:
@@ -173,45 +166,6 @@ class Application:
                     showarrow=False,
                     xanchor="left",
                 )
-
-        # CPE
-
-        fig.add_shape(abe_shape)
-        fig.add_annotation(abe_annotation)
-
-        fig.update_layout(
-            # shapes=[cores_shape],
-            updatemenus=[
-                dict(
-                    type="buttons",
-                    direction="left",
-                    buttons=list(
-                        [
-                            dict(
-                                args2=[
-                                    {},
-                                    {
-                                        "shapes": [],
-                                        "annotations": [],
-                                    },
-                                ],
-                                args=[
-                                    {},
-                                    {
-                                        "shapes": [abe_shape],
-                                        "annotations": [abe_annotation],
-                                    },
-                                ],
-                                label="ABE",
-                                method="update",
-                            ),
-                        ]
-                    ),
-                    y=1.1,
-                    yanchor="top",
-                ),
-            ],
-        )
 
         return fig
 
