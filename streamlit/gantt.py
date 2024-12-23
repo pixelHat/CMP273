@@ -13,12 +13,19 @@ class Application:
     highlighted: list[str]
     cpe: bool
 
-    def __init__(self, file_name: str):
+    def __init__(
+        self,
+        file_name: str,
+        should_display_outliers: bool = False,
+        show_idless_cpu: bool = False,
+    ):
         self.file_name = file_name
         self.application = pq.read_table("application.parquet").to_pandas()
         self.total_time = max(self.application["End"])
-        self.highlighted = []
         self.cpe = True
+        self.should_display_outliers = should_display_outliers
+        self.highlighted = []
+        self.show_idless_cpu = show_idless_cpu
 
     def tasks_by_resource(self, resourceId: list[str]):
         return self.application[self.application["ResourceId"].isin(resourceId)]
@@ -73,26 +80,28 @@ class Application:
         legend_entries = set()
 
         bars = []
-        print("hi", self.highlighted)
         for task in types_of_tasks:
             task_data = df[df["Value"] == task]
             for _, row in task_data.iterrows():
                 show_legend = task not in legend_entries
-                opacity = (
-                    1
-                    if len(self.highlighted) == 0
-                    else 1 if row["JobId"] in self.highlighted else 0.3
-                )
+
+                if self.should_display_outliers:
+                    opacity = 1 if row["Outlier"] else 0.3
+                else:
+                    opacity = (
+                        1
+                        if len(self.highlighted) == 0
+                        else (1 if row["JobId"] in self.highlighted else 0.3)
+                    )
+
                 bar = go.Bar(
                     y=[task_positions[row["Task"]]],
                     x=[row["End"] - row["Start"]],
-                    # x=[row["Start"], row["End"]],
                     orientation="h",
                     name=task,
                     legendgroup=task,
                     showlegend=show_legend,
                     opacity=opacity,
-                    # width=0.4,
                     base=row["Start"],
                     marker_color=task_colors[row["Value"]],
                     hovertext=row["Duration"],
@@ -107,6 +116,7 @@ class Application:
                     legend_entries.add(task)  # Add the task to the legend tracking set
 
         fig.add_traces(bars)
+
         fig.update_layout(
             title="Task Timeline",
             xaxis_title="Time (milliseconds)",
@@ -147,12 +157,30 @@ class Application:
             name="abe",
         )
 
+        # Idle CPU
+        if self.show_idless_cpu:
+            for index, resourceId in enumerate(self.resourcesId):
+                fig.add_annotation(
+                    text=f"{self.idelles_resource_time(self.tasks_by_resource([resourceId]))}%",
+                    x=1,  # x position
+                    y=index,  # y position
+                    font=dict(color="black"),
+                    bgcolor="white",
+                    bordercolor="black",
+                    borderwidth=1,
+                    borderpad=2,
+                    align="center",
+                    showarrow=False,
+                    xanchor="left",
+                )
+
         # CPE
 
         fig.add_shape(abe_shape)
         fig.add_annotation(abe_annotation)
 
         fig.update_layout(
+            # shapes=[cores_shape],
             updatemenus=[
                 dict(
                     type="buttons",
@@ -182,7 +210,7 @@ class Application:
                     y=1.1,
                     yanchor="top",
                 ),
-            ]
+            ],
         )
 
         return fig
@@ -199,6 +227,8 @@ class Application:
         self.highlighted = list(bars)
 
     def highlight_task_depedency(self, id: str):
+        if self.should_display_outliers:
+            return
         dag = pq.read_table("dag.parquet", columns=["JobId", "Dependent"]).to_pandas()
         kids = dag[dag["Dependent"] == id]
         self.highlighted = list([str(j) for j in kids["JobId"]]) + [id]

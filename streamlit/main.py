@@ -5,34 +5,44 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import pyarrow.parquet as pq
+from criticalpath import Node
+
+# https://github.com/okld/streamlit-elements?tab=readme-ov-file
+
+import networkx as nx
 
 from gantt import Application, StarPU
 
-# tmp = pq.read_table("variable.parquet").to_pandas()
-# dag = pq.read_table("dag.parquet").to_pandas()
-# st.write(dag)
+variables = pq.read_table("variable.parquet").to_pandas()
+# st.write(variables)
+ready_data = variables[variables["Type"] == "Ready"]
+submitted_data = variables[variables["Type"] == "Submitted"]
+submitted_chart = px.line(submitted_data, x="Start", y="Value", title="Submitted")
+ready_chart = px.line(ready_data, x="Start", y="Value", title="Ready")
 
-st.markdown("# Todos")
-st.markdown(
-    """
-- [x] Show tasks depedency
-- [ ] Add the critical path estimation
-- [ ] Add charts for the submmited and ready
-- [ ] Allows user to select the dataset
-- [ ] Allows user to select more than one dataset and display all of them side by side.
-- [ ] Add button to show outlier
-- [ ] Adds idleless worker
+# st.plotly_chart(submitted_chart)
 
-### Extra
 
-- [ ] Extract gantt chart to a class
-- [ ] Add slider to aggregate equal tasks that have distance less than a value
-"""
+df_skipped = (
+    pd.concat([ready_data.iloc[::6], ready_data.iloc[-1:]])
+    .drop_duplicates()
+    .reset_index(drop=True)
 )
+
+fig = px.scatter(
+    df_skipped,
+    x="Start",
+    y="Value",
+    color="Value",
+    title="Abc",
+)
+fig.update_traces(mode="lines", line_shape="hv")
+# st.plotly_chart(fig)
+
 
 application = pq.read_table("application.parquet").to_pandas()
 
-st.write(application)
+# st.write(application)
 
 st.markdown("# Testes")
 
@@ -48,17 +58,24 @@ cpu0_spent = sum(
 )
 
 
-gantt = Application("application.parquet")
+should_display_outliers = st.toggle("Outliers")
+should_display_cpu_idless = st.toggle("CPU Idless")
+gantt = Application(
+    "application.parquet",
+    should_display_outliers=should_display_outliers,
+    show_idless_cpu=should_display_cpu_idless,
+)
 
 
 @st.fragment
 def handle_application_chart_events():
-    if st.button("CPB"):
-        gantt.toggle_cpe()
     click_data = st.session_state.get("st", None)
-    if click_data and len(click_data["selection"]["points"]) > 0:
+    if (
+        click_data
+        and len(click_data["selection"]["points"]) > 0
+        and not should_display_outliers
+    ):
         id = click_data["selection"]["points"][0]["customdata"]["id"]
-        st.write(f"You clicked on: {click_data}")
         gantt.highlight_task_depedency(id)
     else:
         gantt.highlight([])
@@ -66,36 +83,72 @@ def handle_application_chart_events():
 
 handle_application_chart_events()
 
+
+def application_on_select():
+    if should_display_outliers:
+        del st.session_state["st"]
+
+
 st.plotly_chart(
     gantt.chart,
     use_container_width=True,
-    on_select="rerun",
+    on_select=application_on_select,
     key="st",
 )
 
-starpu_gantt = StarPU("starpu.parquet")
-st.plotly_chart(starpu_gantt.chart(), use_container_width=True)
 
-import networkx as nx
+@st.fragment
+def tmp():
+    starpu_gantt = StarPU("starpu.parquet")
+    # st.plotly_chart(starpu_gantt.chart(), use_container_width=True)
 
-# id = "1"
-dag = pq.read_table("dag.parquet", columns=["JobId", "Dependent", "Cost"]).to_pandas()
 
-# Add new categories first
-dag["Dependent"] = dag["Dependent"].astype("category")
-dag["Dependent"] = dag["Dependent"].cat.add_categories(["root"])
+tmp()
 
-# 45220
-dag.loc[dag["JobId"] == "11", "Dependent"] = "1"
-dag.loc[dag["JobId"] == "1", "Dependent"] = "root"
-tuple_list = list(zip(dag["JobId"], dag["Dependent"], dag["Cost"]))
-graph = nx.DiGraph()
-graph.add_weighted_edges_from(tuple_list)
-critical_path = nx.dag_longest_path(graph)
-df = application[application["JobId"].isin(critical_path)]
-st.write(df["Duration"].sum())
+
+def cpe_test():
+
+    # id = "1"
+    dag = pq.read_table("dag.parquet").to_pandas()
+    st.write(dag)
+
+    # Add new categories first
+    dag["Dependent"] = dag["Dependent"].astype("category")
+    dag["Dependent"] = dag["Dependent"].cat.add_categories(["root"])
+    dag["Cost"] = dag["Cost"] * -1
+
+    # 45220
+    dag.loc[dag["JobId"] == "11", "Dependent"] = "1"
+    dag.loc[dag["JobId"] == "1", "Dependent"] = "root"
+    tuple_list = list(zip(dag["JobId"], dag["Dependent"], dag["Cost"]))
+    graph = nx.DiGraph()
+    graph.add_weighted_edges_from(tuple_list)
+    critical_path = nx.dag_longest_path(graph)
+    df = dag[dag["JobId"].isin(critical_path)]
+    st.write(df["Cost"].sum())
+
+
 # 45
 
-st.write(dag)
-st.write(graph.nodes["1"])
-# crit_path = [str(n) for n in graph.nodes.get_critical_path()]
+# tasks = tuple(zip(dag["JobId"], dag["Cost"]))
+# dag_without_the_root = dag[dag["JobId"] != "1"]
+# depend = tuple(zip(dag_without_the_root["JobId"], dag_without_the_root["Dependent"]))
+#
+# proj = Node("Project")
+# for t in tasks:
+#     proj.add(Node(t[0], duration=t[1]))
+#
+# # add dependency
+# for d in depend:
+#     proj.link(d[0], d[1])
+#
+# # upadate
+# st.write("calls update")
+# proj.update_all()
+#
+# # crit_path = [str(n) for n in proj.get_critical_path()]
+# total_time = proj.duration
+# st.write("total finished")
+#
+# # st.write("critical path", crit_path)
+# st.write("total time", total_time)
