@@ -1,10 +1,7 @@
 from dataclasses import dataclass
+from functools import cached_property
 import pyarrow.parquet as pq
-import streamlit as st
 import plotly.graph_objects as go
-from functools import cache, cached_property
-
-import networkx as nx
 
 
 @dataclass
@@ -16,12 +13,16 @@ class Application:
     def __init__(
         self,
         file_name: str,
+        dag_file_name: str,
         should_display_outliers: bool = False,
         show_idless_cpu: bool = False,
         show_abe: bool = False,
     ):
         self.file_name = file_name
-        self.application = pq.read_table("application.parquet").to_pandas()
+        self.application = pq.read_table(file_name).to_pandas()
+        self.dag = pq.read_table(
+            dag_file_name, columns=["JobId", "Dependent"]
+        ).to_pandas()
         self.total_time = max(self.application["End"])
         self.cpe = True
         self.should_display_outliers = should_display_outliers
@@ -98,7 +99,7 @@ class Application:
 
                 bar = go.Bar(
                     y=[task_positions[row["Task"]]],
-                    x=[row["End"] - row["Start"]],
+                    x=[row["Duration"]],
                     orientation="h",
                     name=task,
                     legendgroup=task,
@@ -112,29 +113,20 @@ class Application:
                     unselected=dict(marker=dict(opacity=1)),
                     uid=row["JobId"],
                 )
+
                 bars.append(bar)
 
                 if show_legend:
                     legend_entries.add(task)  # Add the task to the legend tracking set
         fig.add_traces(bars)
 
-        fig.update_layout(
-            title="Task Timeline",
-            xaxis_title="Time (milliseconds)",
-            yaxis_title="Core",
-            barmode="relative",
-            yaxis=dict(
-                tickvals=list(range(len(df["ResourceId"].unique()))),
-                ticktext=df["ResourceId"].unique(),
-            ),
-        )
         fig.update_yaxes(autorange="reversed")
 
         fig.update_xaxes(
-            tickmode="linear",  # Set tick mode to linear
-            tick0=0,  # Starting point
-            dtick=10000,  # Interval between ticks
-            tickformat=",",  # Format to show full numbers without abbreviations
+            tickmode="linear",
+            tick0=0,
+            dtick=10000,
+            tickformat=",",
         )
 
         # ABE
@@ -155,8 +147,8 @@ class Application:
             for index, resourceId in enumerate(self.resourcesId):
                 fig.add_annotation(
                     text=f"{self.idelles_resource_time(self.tasks_by_resource([resourceId]))}%",
-                    x=1,  # x position
-                    y=index,  # y position
+                    x=1,
+                    y=index,
                     font=dict(color="black"),
                     bgcolor="white",
                     bordercolor="black",
@@ -167,6 +159,30 @@ class Application:
                     xanchor="left",
                 )
 
+        fig.update_layout(
+            title="Application",
+            xaxis_title="Time (milliseconds)",
+            yaxis_title="Workers",
+            barmode="relative",
+            yaxis=dict(
+                tickvals=list(range(len(df["ResourceId"].unique()))),
+                ticktext=df["ResourceId"].unique(),
+            ),
+            newshape_line_color="cyan",
+            editrevision=True,
+            legend=dict(
+                orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5
+            ),
+            newshape=dict(
+                fillcolor="rgba(0,0, 0,0.2)",
+                label=dict(
+                    text="A1",
+                    textposition="top center",
+                    yanchor="bottom",
+                    texttemplate="A%{x0:d}",
+                ),
+            ),
+        )
         return fig
 
     @cached_property
@@ -183,103 +199,5 @@ class Application:
     def highlight_task_depedency(self, id: str):
         if self.should_display_outliers:
             return
-        dag = pq.read_table("dag.parquet", columns=["JobId", "Dependent"]).to_pandas()
-        kids = dag[dag["Dependent"] == id]
+        kids = self.dag[self.dag["Dependent"] == id]
         self.highlighted = list([str(j) for j in kids["JobId"]]) + [id]
-
-    def toggle_cpe(self):
-        # self.cpe = not self.cpe
-        dag = pq.read_table("dag.parquet", columns=["JobId", "Dependent"]).to_pandas()
-        st.write(dag)
-        graph = nx.DiGraph()
-        # graph.add_edges_from()
-
-
-@dataclass
-class StarPU:
-    file_name: str
-
-    def __init__(self, file_name: str):
-        self.file_name = file_name
-        self.starpu = pq.read_table(
-            "starpu.parquet",
-            columns=["ResourceId", "Value", "Start", "End", "Duration"],
-        ).to_pandas()
-        # self.total_time = max(self.application["End"])
-
-    def tasks_by_resource(self, resourceId: list[str]):
-        return self.starpu[self.starpu["ResourceId"].isin(resourceId)]
-
-    @property
-    def resourcesId(self):
-        return self.starpu["ResourceId"].unique()
-
-    def chart(self):
-        COLORS = [
-            "#8dd3c7",
-            "#ffffb3",
-            "#bebada",
-            "#fb8072",
-            "#80b1d3",
-            "#fdb462",
-            "#b3de69",
-            "#fccde5",
-            "#d9d9d9",
-            "#bc80bd",
-        ]
-
-        df = self.tasks_by_resource(self.resourcesId)
-        df["Task"] = df["ResourceId"]
-        task_names = df["Task"].unique()
-        task_positions = {task: index for index, task in enumerate(task_names)}
-        types_of_tasks = df["Value"].unique()
-        # TODO: generate better colors
-        task_colors = {
-            task: COLORS[index] for (index, task) in enumerate(types_of_tasks)
-        }
-
-        # Create the figure
-        fig = go.Figure()
-
-        legend_entries = set()
-
-        for task in types_of_tasks:
-            task_data = df[df["Value"] == task][df["Duration"] > 1]
-            for _, row in task_data.iterrows():
-                show_legend = task not in legend_entries
-                fig.add_trace(
-                    go.Bar(
-                        y=[task_positions[row["Task"]]],
-                        x=[row["End"] - row["Start"]],
-                        orientation="h",
-                        name=task,
-                        legendgroup=task,
-                        showlegend=show_legend,
-                        base=row["Start"],
-                        marker_color=task_colors[row["Value"]],
-                    ),
-                )
-
-                if show_legend:
-                    legend_entries.add(task)  # Add the task to the legend tracking set
-
-        fig.update_layout(
-            title="Task Timeline",
-            xaxis_title="Time (milliseconds)",
-            yaxis_title="Core",
-            barmode="relative",
-            yaxis=dict(
-                tickvals=list(range(len(df["ResourceId"].unique()))),
-                ticktext=df["ResourceId"].unique(),
-            ),
-        )
-        fig.update_yaxes(autorange="reversed")
-
-        fig.update_xaxes(
-            tickmode="linear",  # Set tick mode to linear
-            tick0=0,  # Starting point
-            dtick=10000,  # Interval between ticks
-            tickformat=",",  # Format to show full numbers without abbreviations
-        )
-
-        return fig

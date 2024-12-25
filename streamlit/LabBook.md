@@ -16,8 +16,6 @@
 
 # StreamLit
 
-
-
 ## fragment
 
 ```py
@@ -126,3 +124,24 @@ fig.show(
             'eraseshape'
         ]})
 ```
+
+# Further work
+
+## Optmizations
+
+### MinMaxLTTB: Leveraging MinMax-Preselection to Scale LTTB
+
+https://arxiv.org/abs/2305.00332
+https://github.com/predict-idlab/MinMaxLTTB
+
+Visualization plays an important role in analyzing and exploring time series data. To facilitate efficient visualization of large datasets, downsampling has emerged as a well-established approach. This work concentrates on LTTB (Largest-Triangle-Three-Buckets), a widely adopted downsampling algorithm for time series data point selection. Specifically, we propose MinMaxLTTB, a two-step algorithm that marks a significant enhancement in the scalability of LTTB. MinMaxLTTB entails the following two steps: (i) the MinMax algorithm preselects a certain ratio of minimum and maximum data points, followed by (ii) applying the LTTB algorithm on only these preselected data points, effectively reducing LTTB's time complexity. The low computational cost of the MinMax algorithm, along with its parallelization capabilities, facilitates efficient preselection of data points. Additionally, the competitive performance of MinMax in terms of visual representativeness also makes it an effective reduction method. Experiments show that MinMaxLTTB outperforms LTTB by more than an order of magnitude in terms of computation time. Furthermore, preselecting a small multiple of the desired output size already provides similar visual representativeness compared to LTTB. In summary, MinMaxLTTB leverages the computational efficiency of MinMax to scale LTTB, without compromising on LTTB's favored visualization properties. The accompanying code and experiments of this paper can be found at this https URL.
+
+The perfect case would be to modify the algorithm to work with the critical path.
+
+## Lazy Loading
+
+The tool should start by rendering the panels that users can see.
+
+## Replicate zoom in/out
+
+Some panels like Application and StarPU are showing the same thing. Thus, it would be good to sync the zoom between them.
