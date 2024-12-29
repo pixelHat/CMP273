@@ -79,13 +79,13 @@ def scheduler_panels(file_name: str, key_submitted: str, key_ready: str):
 
 options = st.multiselect(
     "Dataset",
-    ["lws", "dmda", "dmdas"],
+    ["lws", "dmada", "dmdas"],
     ["dmdas"],
 )
 
 datasets = {
     "lws": "datasets/lws",
-    "dmda": "datasets/dmda",
+    "dmada": "datasets/dmada",
     "dmdas": "datasets/dmdas",
 }
 

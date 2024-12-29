@@ -4,15 +4,19 @@
 - [x] Add charts for the submmited and ready
 - [x] Add button to show outlier
 - [x] Adds idleless worker
-- [ ] Allows user to select the dataset
-- [ ] Allows user to select more than one dataset and display all of them side by side.
+- [x] Allows user to select the dataset
+- [x] Allows user to select more than one dataset and display all of them side by side.
 
 ### Extra
 
-- [ ] Allows user to add annotations
-- [ ] Extract gantt chart to a class
+- [x] Allows user to add annotations
+- [x] Extract gantt chart to a class
 - [ ] Add slider to aggregate equal tasks that have distance less than a value
 - [ ] Add the critical path estimation
+
+# Power Point
+
+I can talk about the 1-d indexing and its effect in the depedency between the tasks. We could use a hash table to avoid it. I can use the plotly annotation here.
 
 # StreamLit
 

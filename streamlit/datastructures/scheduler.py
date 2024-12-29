@@ -29,7 +29,7 @@ class Scheduler:
             x="Start",
             y="Value",
             color="Value",
-            title="Abc",
+            title="Ready",
         )
         fig.update_traces(mode="lines", line_shape="hv")
         return fig
