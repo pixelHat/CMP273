@@ -6,11 +6,18 @@ import pyarrow.parquet as pq
 
 @dataclass
 class Scheduler:
+    variables: pd.DataFrame
 
     def __init__(self, file_name: str):
         self.variables = pq.read_table(file_name).to_pandas()
+        assert isinstance(
+            self.variables, pd.DataFrame
+        ), "self.variables must be a DataFrame"
+        self.variables["Start"] = self.variables["Start"].astype(float)
+
+        self.variables = self.variables[self.variables["Start"] >= 0]  # type: ignore
         self.ready_data = self.variables[self.variables["Type"] == "Ready"]
-        self.submitted_data = self.variables[self.variables["Type"] == "Submitted"]
+        self.submitted_data = self.variables[(self.variables["Type"] == "Submitted")]
 
     @property
     def submitted_panel(self):

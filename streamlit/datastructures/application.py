@@ -55,26 +55,18 @@ class Application:
 
     @property
     def chart(self):
-        COLORS = [
-            "#8dd3c7",
-            "#ffffb3",
-            "#bebada",
-            "#fb8072",
-            "#80b1d3",
-            "#fdb462",
-            "#b3de69",
-            "#fccde5",
-            "#d9d9d9",
-            "#bc80bd",
-        ]
-        df = self.tasks_by_resource(self.resourcesId)
+        df = self.tasks_by_resource(self.resourcesId).sort_values(
+            by="Value", ascending=True
+        )
         df["Task"] = df["ResourceId"]
         task_names = df["Task"].unique()
         task_positions = {task: index for index, task in enumerate(task_names)}
         types_of_tasks = df["Value"].unique()
-        # TODO: generate better colors
         task_colors = {
-            task: COLORS[index] for (index, task) in enumerate(types_of_tasks)
+            "lapack_dgeqrt": "#8dd3c7",
+            "lapack_dlarfb": "#ffffb3",
+            "lapack_dtpqrt": "#bebada",
+            "lapack_dtpmqrt": "#fb8072",
         }
 
         # Create the figure
@@ -158,7 +150,6 @@ class Application:
                     showarrow=False,
                     xanchor="left",
                 )
-
         fig.update_layout(
             title="Application",
             xaxis_title="Time (milliseconds)",
@@ -171,7 +162,11 @@ class Application:
             newshape_line_color="cyan",
             editrevision=True,
             legend=dict(
-                orientation="h", yanchor="bottom", y=1.1, xanchor="center", x=0.5
+                orientation="h",
+                yanchor="bottom",
+                y=1.1,
+                xanchor="center",
+                x=0.5,
             ),
             newshape=dict(
                 fillcolor="rgba(0,0, 0,0.2)",
