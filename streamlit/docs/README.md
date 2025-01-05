@@ -1,5 +1,19 @@
-# Application Task Dependencies and StarPU Monitoring
-This document provides an overview of the key features and functionalities of the application, focusing on task dependencies and monitoring StarPU actions. Below are detailed descriptions of the various panels and their functionalities.
+# Task Management Simplified: Visual Tools for StarPU Performance Monitoring
+
+## Summary
+
+In today's fast-paced computing environment, efficient task management is crucial for optimizing performance and resource utilization. This application provides users with powerful visual tools to manage task dependencies and monitor StarPU actions effectively.
+
+The application features an intuitive interface that highlights task dependencies, allowing users to easily identify which tasks are reliant on others. By clicking on a specific task, users can visualize all dependent tasks, facilitating better decision-making and workflow optimization.
+
+The StarPU monitoring panel displays all actions performed by StarPU, with a default filter that shows only tasks exceeding 1 millisecond. This feature enables users to focus on significant tasks while offering the flexibility to adjust filters for a more tailored view.
+
+Additionally, users can analyze multiple datasets side by side in the StarPU application panel. This panel includes analytical options such as Area Bound Exception (ABE), which indicates the minimum execution time required, and Outliers, which highlights tasks that exceed expected durations. The CPU Idleness metric further enhances insights by showing the percentage of time the CPU core remains idle.
+
+Finally, the submitted and ready tasks panel provides a clear overview of task statuses, distinguishing between tasks waiting for dependencies and those ready for execution. 
+
+By leveraging these visual tools, users can streamline their task management processes, enhance performance monitoring, and ultimately improve the efficiency of their workflows. This application empowers users to take control of their task execution, making it an essential tool for anyone working with StarPU.
+
 
 ## Task Dependency Visualization
 
