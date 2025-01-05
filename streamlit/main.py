@@ -17,7 +17,7 @@ def application_on_select(key: str, should_display_outliers=False):
 def toggles_panel():
     should_display_abe = st.toggle("ABE", value=True)
     should_display_outliers = st.toggle("Outliers")
-    should_display_cpu_idless = st.toggle("CPU Idless")
+    should_display_cpu_idless = st.toggle("CPU Idleness")
     st.session_state["should_display_abe"] = should_display_abe
     st.session_state["should_display_outliers"] = should_display_outliers
     st.session_state["should_display_cpu_idless"] = should_display_cpu_idless
@@ -66,7 +66,15 @@ def application_panel(file_name: str, dag_file_name: str, key: str):
 
 @st.fragment
 def starpu_panel(file_name: str, key: str):
-    starpu_gantt = StarPU(file_name)
+    columns = st.columns(4, gap="medium")
+    with columns[0]:
+        interval = st.number_input(
+            "Remove tasks with lifespan less than",
+            value=1.0,
+            format="%0.1f",
+            key=f"number_input_{key}",
+        )
+    starpu_gantt = StarPU(file_name, interval)
     st.plotly_chart(starpu_gantt.chart(), use_container_width=True, key=key)
 
 

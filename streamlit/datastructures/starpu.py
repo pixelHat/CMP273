@@ -8,8 +8,9 @@ from plotly_resampler import FigureResampler
 class StarPU:
     file_name: str
 
-    def __init__(self, file_name: str):
+    def __init__(self, file_name: str, interval: float):
         self.file_name = file_name
+        self.interval = interval
         self.starpu = pq.read_table(
             file_name,
             columns=["ResourceId", "Value", "Start", "End", "Duration"],
@@ -52,7 +53,7 @@ class StarPU:
         legend_entries = set()
 
         for task in types_of_tasks:
-            task_data = df[df["Value"] == task][df["Duration"] > 1]
+            task_data = df[df["Value"] == task][df["Duration"] > self.interval]
             for _, row in task_data.iterrows():
                 show_legend = task not in legend_entries
                 fig.add_trace(
@@ -74,7 +75,7 @@ class StarPU:
         fig.update_layout(
             title="Task Timeline",
             xaxis_title="Time (milliseconds)",
-            yaxis_title="Core",
+            yaxis_title="Workers",
             barmode="relative",
             yaxis=dict(
                 tickvals=list(range(len(df["ResourceId"].unique()))),
